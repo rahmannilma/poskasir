@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmDialog } from '../utils/swal';
+import { supabase } from '../utils/supabaseClient';
 
 interface AdminViewsProps {
   view: string;
@@ -135,16 +136,26 @@ export default function AdminViews({
     ).then((result) => {
       if (result.isConfirmed) {
         if (view === 'produk') {
+          supabase.from('products').delete().eq('id', item.id).then();
           setProducts(prev => prev.filter(p => p.id !== item.id));
         } else if (view === 'kategori') {
+          supabase.from('categories').delete().eq('id', item.id).then();
           setCategories(prev => prev.filter(c => c.id !== item.id));
         } else if (view === 'staff') {
+          supabase.from('staff_members').delete().eq('id', item.id).then();
           setStaffMembers(prev => prev.filter(s => s.id !== item.id));
         } else if (view === 'absensi') {
+          if (item.id) {
+            supabase.from('attendance_logs').delete().eq('id', item.id).then();
+          }
           setAttendanceLogs(prev => prev.filter((_, idx) => idx !== item.index));
         } else if (view === 'shift kerja') {
+          if (item.id) {
+            supabase.from('shift_schedules').delete().eq('id', item.id).then();
+          }
           setShiftSchedules(prev => prev.filter((_, idx) => idx !== item.index));
         } else if (view === 'transaksi') {
+          supabase.from('transactions').delete().eq('id', item.id).then();
           setTransactions(prev => prev.filter(t => t.id !== item.id));
         }
         showSuccessAlert('Terhapus', 'Data berhasil dihapus.');
@@ -237,32 +248,37 @@ export default function AdminViews({
           showErrorAlert('SKU Terdaftar', 'SKU Produk sudah terdaftar! Harap gunakan SKU lain.');
           return;
         }
-        const newProd = {
-          id: `prod-${Date.now()}`,
-          sku: formData.sku.toUpperCase() || `PROD-${Math.floor(1000 + Math.random() * 9000)}`,
+        const newId = `prod-${Date.now()}`;
+        const newSku = formData.sku.toUpperCase() || `PROD-${Math.floor(1000 + Math.random() * 9000)}`;
+        const dbProd = {
+          id: newId,
+          sku: newSku,
           name: formData.name,
           category: formData.category,
           price,
-          costPrice,
-          description: formData.description,
           image: imageUrl,
           modifiers: [],
+          description: formData.description
         };
-        setProducts(prev => [...prev, newProd]);
+        supabase.from('products').insert([dbProd]).then();
+        setProducts(prev => [...prev, { ...dbProd, costPrice }]);
       } else {
+        const dbProd = {
+          sku: formData.sku.toUpperCase(),
+          name: formData.name,
+          category: formData.category,
+          price,
+          image: imageUrl,
+          description: formData.description
+        };
+        supabase.from('products').update(dbProd).eq('id', formData.id).then();
         setProducts(prev =>
           prev.map(p =>
             p.id === formData.id
               ? {
                   ...p,
-                  sku: formData.sku.toUpperCase(),
-                  name: formData.name,
-                  category: formData.category,
-                  price,
+                  ...dbProd,
                   costPrice,
-                  description: formData.description,
-                  image: imageUrl,
-                  modifiers: [],
                 }
               : p
           )
@@ -276,12 +292,16 @@ export default function AdminViews({
           return;
         }
         const newCat = { id: cleanId, name: formData.name, icon: formData.icon };
+        supabase.from('categories').insert([newCat]).then();
         setCategories(prev => [...prev, newCat]);
       } else {
+        const updatedCat = { id: cleanId, name: formData.name, icon: formData.icon };
+        supabase.from('categories').update(updatedCat).eq('id', formData.oldId).then();
         setCategories(prev =>
-          prev.map(c => (c.id === formData.oldId ? { id: cleanId, name: formData.name, icon: formData.icon } : c))
+          prev.map(c => (c.id === formData.oldId ? updatedCat : c))
         );
         if (formData.oldId !== cleanId) {
+          supabase.from('products').update({ category: cleanId }).eq('category', formData.oldId).then();
           setProducts(prev =>
             prev.map(p => (p.category === formData.oldId ? { ...p, category: cleanId } : p))
           );
@@ -301,12 +321,20 @@ export default function AdminViews({
           shift: formData.shift,
           status: formData.status,
         };
+        supabase.from('staff_members').insert([newStf]).then();
         setStaffMembers(prev => [...prev, newStf]);
       } else {
+        const updatedStf = {
+          name: formData.name,
+          role: formData.role,
+          shift: formData.shift,
+          status: formData.status,
+        };
+        supabase.from('staff_members').update(updatedStf).eq('id', formData.id).then();
         setStaffMembers(prev =>
           prev.map(s =>
             s.id === formData.id
-              ? { ...s, name: formData.name, role: formData.role, shift: formData.shift, status: formData.status }
+              ? { ...s, ...updatedStf }
               : s
           )
         );
@@ -316,12 +344,24 @@ export default function AdminViews({
         const newAtt = {
           date: formData.date,
           name: formData.name,
-          checkIn: formData.checkIn,
-          checkOut: formData.checkOut,
+          check_in: formData.checkIn,
+          check_out: formData.checkOut,
           status: formData.status,
         };
-        setAttendanceLogs(prev => [newAtt, ...prev]);
+        supabase.from('attendance_logs').insert([newAtt]).then();
+        setAttendanceLogs(prev => [{ ...newAtt, checkIn: formData.checkIn, checkOut: formData.checkOut }, ...prev]);
       } else {
+        const itemToUpdate = attendanceLogs[formData.index];
+        const updatedAtt = {
+          date: formData.date,
+          name: formData.name,
+          check_in: formData.checkIn,
+          check_out: formData.checkOut,
+          status: formData.status,
+        };
+        if (itemToUpdate && itemToUpdate.id) {
+          supabase.from('attendance_logs').update(updatedAtt).eq('id', itemToUpdate.id).then();
+        }
         setAttendanceLogs(prev =>
           prev.map((log, idx) =>
             idx === formData.index
@@ -343,10 +383,16 @@ export default function AdminViews({
         : [];
       if (modalMode === 'add') {
         const newSch = { name: formData.name, staff: staffArr };
+        supabase.from('shift_schedules').insert([newSch]).then();
         setShiftSchedules(prev => [...prev, newSch]);
       } else {
+        const itemToUpdate = shiftSchedules[formData.index];
+        const updatedSch = { name: formData.name, staff: staffArr };
+        if (itemToUpdate && itemToUpdate.id) {
+          supabase.from('shift_schedules').update(updatedSch).eq('id', itemToUpdate.id).then();
+        }
         setShiftSchedules(prev =>
-          prev.map((s, idx) => (idx === formData.index ? { name: formData.name, staff: staffArr } : s))
+          prev.map((s, idx) => (idx === formData.index ? { ...s, ...updatedSch } : s))
         );
       }
     }
@@ -359,6 +405,17 @@ export default function AdminViews({
   // Save settings handler
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    const updatedSettings = {
+      id: 'main',
+      store_name: storeName,
+      store_address: storeAddress,
+      store_phone: storePhone,
+      printer_ip: printerIP,
+      tax_rate: taxRate,
+    };
+    supabase.from('settings').upsert(updatedSettings).then(({ error }) => {
+      if (error) console.error('Error saving settings to Supabase:', error);
+    });
     setSettings({
       storeName,
       storeAddress,
@@ -725,6 +782,16 @@ export default function AdminViews({
                 const checkInTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                 // Check if late (e.g. after 07:00 is late)
                 const isLate = now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() > 0);
+                const dbLog = {
+                  date: todayDateStr,
+                  name: currentUser || 'Kasir',
+                  check_in: checkInTime,
+                  check_out: '--:--',
+                  status: isLate ? `Terlambat` : 'Tepat Waktu'
+                };
+                supabase.from('attendance_logs').insert([dbLog]).then(({ error }) => {
+                  if (error) console.error('Error inserting check-in to Supabase:', error);
+                });
                 const newLog = {
                   date: todayDateStr,
                   name: currentUser || 'Kasir',
@@ -744,6 +811,14 @@ export default function AdminViews({
                 ).then((result) => {
                   if (result.isConfirmed) {
                     const checkOutTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const logToUpdate = attendanceLogs[todayLogIndex];
+                    if (logToUpdate && logToUpdate.id) {
+                      supabase.from('attendance_logs').update({
+                        check_out: checkOutTime
+                      }).eq('id', logToUpdate.id).then(({ error }) => {
+                        if (error) console.error('Error check-out in Supabase:', error);
+                      });
+                    }
                     setAttendanceLogs(prev => prev.map((log, idx) => 
                       idx === todayLogIndex ? { ...log, checkOut: checkOutTime } : log
                     ));

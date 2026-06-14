@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Login from './components/Login';
@@ -9,6 +9,7 @@ import ReceiptModal from './components/ReceiptModal';
 import Dashboard from './components/Dashboard';
 import AdminViews from './components/AdminViews';
 import LandingPage from './components/LandingPage';
+import { supabase, checkTableExists } from './utils/supabaseClient';
 import { MenuItem, OrderItem, menuItems, categoryConfig, Category } from './data';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmDialog } from './utils/swal';
 
@@ -157,6 +158,190 @@ export default function App() {
     },
   ]);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+
+  // Supabase Data Load & Sync
+  useEffect(() => {
+    async function loadData() {
+      const tables = ['categories', 'products', 'staff_members', 'attendance_logs', 'shift_schedules', 'settings', 'pending_orders', 'transactions'];
+      const missingTables = [];
+      for (const t of tables) {
+        const exists = await checkTableExists(t);
+        if (!exists) {
+          missingTables.push(t);
+        }
+      }
+
+      if (missingTables.length > 0) {
+        showWarningAlert(
+          'Database Belum Siap',
+          `Tabel berikut belum dibuat di Supabase: ${missingTables.join(', ')}. Harap jalankan script di schema.sql pada SQL Editor Supabase Anda.`
+        );
+        return;
+      }
+
+      // Load & Seed Categories
+      const { data: catData, error: catErr } = await supabase.from('categories').select('*');
+      if (!catErr) {
+        if (catData.length === 0) {
+          const initialCats = [
+            { id: 'coffee', name: 'Kopi', icon: 'coffee' },
+            { id: 'tea', name: 'Teh', icon: 'emoji_food_beverage' },
+            { id: 'food', name: 'Makanan', icon: 'restaurant' },
+          ];
+          await supabase.from('categories').insert(initialCats);
+          setCategories(initialCats);
+        } else {
+          setCategories(catData);
+        }
+      }
+
+      // Load & Seed Products
+      const { data: prodData, error: prodErr } = await supabase.from('products').select('*');
+      if (!prodErr) {
+        if (prodData.length === 0) {
+          const seedProds = menuItems.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            category: p.category,
+            image: p.image,
+            modifiers: p.modifiers || [],
+            sku: p.sku || '',
+            description: p.description || ''
+          }));
+          await supabase.from('products').insert(seedProds);
+          setProducts(menuItems);
+        } else {
+          const mappedProds = prodData.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            category: p.category,
+            image: p.image || '',
+            modifiers: p.modifiers || [],
+            sku: p.sku || '',
+            description: p.description || ''
+          }));
+          setProducts(mappedProds);
+        }
+      }
+
+      // Load & Seed Staff Members
+      const { data: staffData, error: staffErr } = await supabase.from('staff_members').select('*');
+      if (!staffErr) {
+        if (staffData.length === 0) {
+          const initialStaff = [
+            { id: 'STF-01', name: 'Marcus W.', role: 'Kasir Utama', shift: 'Pagi', status: 'Aktif' },
+            { id: 'STF-02', name: 'Sarah K.', role: 'Barista', shift: 'Pagi', status: 'Aktif' },
+            { id: 'STF-03', name: 'Alex T.', role: 'Barista', shift: 'Sore', status: 'Aktif' },
+            { id: 'STF-04', name: 'Rian', role: 'Kasir', shift: 'Sore', status: 'Aktif' },
+            { id: 'STF-05', name: 'Ani Store Manager', role: 'Supervisor', shift: 'Full', status: 'Off' },
+          ];
+          await supabase.from('staff_members').insert(initialStaff);
+          setStaffMembers(initialStaff);
+        } else {
+          setStaffMembers(staffData);
+        }
+      }
+
+      // Load & Seed Shift Schedules
+      const { data: shiftData, error: shiftErr } = await supabase.from('shift_schedules').select('*');
+      if (!shiftErr) {
+        if (shiftData.length === 0) {
+          const initialShifts = [
+            { name: 'Shift Pagi (07:00 - 15:00)', staff: ['Marcus W. (Kasir)', 'Sarah K. (Barista)'] },
+            { name: 'Shift Sore (15:00 - 23:00)', staff: ['Rian (Kasir)', 'Alex T. (Barista)'] },
+            { name: 'Full Time (07:00 - 18:00)', staff: ['Ani (Supervisor / Manager)'] },
+          ];
+          await supabase.from('shift_schedules').insert(initialShifts);
+          setShiftSchedules(initialShifts);
+        } else {
+          setShiftSchedules(shiftData);
+        }
+      }
+
+      // Load & Seed Attendance Logs
+      const { data: attData, error: attErr } = await supabase.from('attendance_logs').select('*');
+      if (!attErr) {
+        if (attData.length === 0) {
+          const initialAtt = [
+            { date: '14 Juni 2026', name: 'Marcus W.', check_in: '06:55', check_out: '15:05', status: 'Tepat Waktu' },
+            { date: '14 Juni 2026', name: 'Sarah K.', check_in: '06:50', check_out: '15:00', status: 'Tepat Waktu' },
+            { date: '14 Juni 2026', name: 'Alex T.', check_in: '15:10', check_out: '--:--', status: 'Terlambat (10m)' },
+            { date: '14 Juni 2026', name: 'Rian', check_in: '14:55', check_out: '--:--', status: 'Tepat Waktu' },
+            { date: '13 Juni 2026', name: 'Marcus W.', check_in: '06:58', check_out: '15:02', status: 'Tepat Waktu' },
+            { date: '13 Juni 2026', name: 'Alex T.', check_in: '14:52', check_out: '23:05', status: 'Tepat Waktu' },
+          ];
+          await supabase.from('attendance_logs').insert(initialAtt);
+          setAttendanceLogs(initialAtt.map(a => ({ date: a.date, name: a.name, checkIn: a.check_in, checkOut: a.check_out, status: a.status })));
+        } else {
+          setAttendanceLogs(attData.map(a => ({
+            id: a.id,
+            date: a.date,
+            name: a.name,
+            checkIn: a.check_in || '--:--',
+            checkOut: a.check_out || '--:--',
+            status: a.status
+          })));
+        }
+      }
+
+      // Load Settings
+      const { data: settingsData, error: settingsErr } = await supabase.from('settings').select('*').eq('id', 'main');
+      if (!settingsErr && settingsData && settingsData.length > 0) {
+        const s = settingsData[0];
+        setSettings({
+          storeName: s.store_name || 'M-Coffee Cafe',
+          storeAddress: s.store_address || '',
+          storePhone: s.store_phone || '',
+          printerIP: s.printer_ip || '',
+          taxRate: s.tax_rate || '8',
+        });
+      }
+
+      // Load Pending Orders
+      const { data: pendingData, error: pendingErr } = await supabase.from('pending_orders').select('*');
+      if (!pendingErr) {
+        if (pendingData.length > 0) {
+          const mappedPending = pendingData.map(p => ({
+            id: p.id,
+            orderNumber: p.order_number,
+            customerName: p.customer_name || '',
+            tableNumber: p.table_number || '',
+            discountPercent: Number(p.discount_percent) || 0,
+            items: typeof p.items === 'string' ? JSON.parse(p.items) : p.items
+          }));
+          setPendingOrders(mappedPending);
+
+          const ids = pendingData.map(p => {
+            const num = parseInt(p.id.replace('pending-', ''));
+            return isNaN(num) ? 0 : num;
+          });
+          const maxId = Math.max(...ids, 100);
+          nextOrderId = maxId + 1;
+        }
+      }
+
+      // Load Transactions
+      const { data: txData, error: txErr } = await supabase.from('transactions').select('*');
+      if (!txErr) {
+        if (txData.length > 0) {
+          const mappedTx = txData.map(t => ({
+            id: t.id,
+            customer: t.customer,
+            time: t.time,
+            total: Number(t.total),
+            method: t.method,
+            status: t.status,
+            items: typeof t.items === 'string' ? JSON.parse(t.items) : t.items
+          }));
+          setTransactions(mappedTx);
+        }
+      }
+    }
+
+    loadData();
+  }, []);
 
   // Format IDR for simple display
   const formatPrice = (price: number) => {
@@ -348,6 +533,15 @@ export default function App() {
 
     if (editingOrderId) {
       // Update existing pending order
+      const updatedOrder = {
+        customer_name: customerName,
+        table_number: tableNumber,
+        discount_percent: parseFloat(discountPercent) || 0,
+        items: orderItems,
+      };
+      supabase.from('pending_orders').update(updatedOrder).eq('id', editingOrderId).then(({ error }) => {
+        if (error) console.error('Error updating pending order in Supabase:', error);
+      });
       setPendingOrders((prev) =>
         prev.map((o) =>
           o.id === editingOrderId
@@ -364,15 +558,26 @@ export default function App() {
       showSuccessAlert('Pesanan Diperbarui', `Pesanan Meja ${tableNumber || customerName} berhasil diperbarui.`);
     } else {
       // Save as new pending order
-      const newPending: PendingOrder = {
-        id: `pending-${nextOrderId++}`,
+      const newId = `pending-${nextOrderId++}`;
+      const newPending = {
+        id: newId,
+        order_number: orderNumber,
+        customer_name: customerName || 'Pelanggan',
+        table_number: tableNumber,
+        discount_percent: parseFloat(discountPercent) || 0,
+        items: orderItems,
+      };
+      supabase.from('pending_orders').insert([newPending]).then(({ error }) => {
+        if (error) console.error('Error inserting pending order to Supabase:', error);
+      });
+      setPendingOrders((prev) => [...prev, {
+        id: newId,
         orderNumber,
         customerName: customerName || 'Pelanggan',
         tableNumber: tableNumber,
         discountPercent: parseFloat(discountPercent) || 0,
         items: orderItems,
-      };
-      setPendingOrders((prev) => [...prev, newPending]);
+      }]);
       showSuccessAlert('Pesanan Disimpan', `Pesanan Meja ${tableNumber || customerName} disimpan ke daftar aktif.`);
     }
 
@@ -389,6 +594,9 @@ export default function App() {
       'Apakah Anda yakin ingin membatalkan dan menghapus pesanan meja ini?'
     ).then((result) => {
       if (result.isConfirmed) {
+        supabase.from('pending_orders').delete().eq('id', editingOrderId).then(({ error }) => {
+          if (error) console.error('Error deleting pending order from Supabase:', error);
+        });
         setPendingOrders((prev) => prev.filter((o) => o.id !== editingOrderId));
         handleNewOrder();
         setIsMobileCartOpen(false);
@@ -453,10 +661,16 @@ export default function App() {
         status: 'Lunas',
         items: orderItems,
       };
+      supabase.from('transactions').insert([newTx]).then(({ error }) => {
+        if (error) console.error('Error inserting transaction to Supabase:', error);
+      });
       setTransactions((prev) => [newTx, ...prev]);
 
       // Remove from pending orders list if it was a loaded pending order
       if (editingOrderId) {
+        supabase.from('pending_orders').delete().eq('id', editingOrderId).then(({ error }) => {
+          if (error) console.error('Error deleting pending order from Supabase:', error);
+        });
         setPendingOrders((prev) => prev.filter((o) => o.id !== editingOrderId));
       }
 
