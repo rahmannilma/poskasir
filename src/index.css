@@ -161,8 +161,6 @@
     body {
         @apply bg-background text-foreground;
         font-family: 'Inter', sans-serif;
-        overflow: hidden;
-        height: 100vh;
     }
 }
 

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseData } from './SupabaseDataContext';
 import { supabase } from './supabaseClient';
 import { toast } from 'sonner';
+import { createClient } from '@supabase/supabase-js';
 
 // 1. Mock <Head> Component
 export function Head({ children }: any) {
@@ -55,7 +56,17 @@ export function usePage<T = any>(): { props: any } {
             user: data.user
         },
         products: data.products,
-        categories: data.categories.map(c => c.name), // Laravel app uses category names array
+        categories: window.location.pathname.startsWith('/categories')
+            ? data.categories.map((c: any) => {
+                const count = data.products.filter((p: any) => p.category === c.name || p.category === c.id).length;
+                return {
+                    id: c.id,
+                    name: c.name,
+                    products_count: count,
+                    created_at: c.created_at || new Date().toISOString()
+                };
+              })
+            : data.categories.map(c => c.name), // Laravel app uses category names array
         rawCategories: data.categories,
         materials: data.materials,
         dining_tables: data.diningTables,
@@ -70,6 +81,7 @@ export function usePage<T = any>(): { props: any } {
         customers: data.customers,
         attendance_logs: data.attendances,
         profiles: data.profiles,
+        staff: data.profiles,
         metrics: data.metrics,
         recentTransactions: data.transactions.slice(0, 10),
         topSellingProducts: data.products.slice(0, 3).map(p => ({
@@ -165,6 +177,19 @@ export const router = {
                 refreshElement.click();
             }
         };
+        const getLoggedInUserProfile = async () => {
+            const demoUserStr = localStorage.getItem('demoUser');
+            if (demoUserStr) {
+                return JSON.parse(demoUserStr);
+            }
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+                return profile;
+            }
+            return null;
+        };
+        const currentUserProfile = await getLoggedInUserProfile();
 
         try {
             // Check auth state trigger
@@ -174,9 +199,9 @@ export const router = {
                 
                 // Demo logic matching original
                 const lowerUser = emailVal.toLowerCase();
-                const isOwner = (lowerUser === 'owner' || lowerUser === 'owner@m-coffee.com') && password === 'owner123';
-                const isKasir = (lowerUser === 'kasir' || lowerUser === 'kasir@m-coffee.com') && password === 'kasir123';
-                const isAdmin = (lowerUser === 'admin' || lowerUser === 'admin@m-coffee.com') && password === 'admin123';
+                const isOwner = (lowerUser === 'owner' || lowerUser === 'owner@pos.id') && password === 'owner123';
+                const isKasir = (lowerUser === 'kasir' || lowerUser === 'kasir@pos.id') && password === 'kasir123';
+                const isAdmin = (lowerUser === 'admin' || lowerUser === 'admin@pos.id') && password === 'admin123';
 
                 if (isOwner || isKasir || isAdmin) {
                     const mockUser = {
@@ -455,6 +480,24 @@ export const router = {
             }
 
             // Categories CRUD
+            if (url === '/categories' && method === 'post') {
+                const catId = data.name.toLowerCase().trim().replace(/\s+/g, '-');
+                const { error } = await supabase.from('categories').insert([{ id: catId, name: data.name }]);
+                if (error) throw error;
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
+            if (url.startsWith('/categories/') && method === 'put') {
+                const catId = url.split('/').pop();
+                const { error } = await supabase.from('categories').update({ name: data.name }).eq('id', catId);
+                if (error) throw error;
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
             if (url.startsWith('/categories/') && method === 'delete') {
                 const catId = url.split('/').pop();
                 const { error } = await supabase.from('categories').delete().eq('id', catId);
@@ -485,12 +528,237 @@ export const router = {
             }
 
             // Staff CRUD
-            if (url.startsWith('/staff/') && method === 'delete') {
+            if (url === '/staff' && method === 'post') {
+                const { name, email, password, role } = data;
+                
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+                const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+                
+                const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+                    auth: {
+                        persistSession: false,
+                        autoRefreshToken: false,
+                        detectSessionInUrl: false
+                    }
+                });
+
+                const { data: authData, error: signUpError } = await tempClient.auth.signUp({
+                    email,
+                    password
+                });
+
+                if (signUpError) throw signUpError;
+
+                if (authData?.user) {
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .insert([
+                            {
+                                id: authData.user.id,
+                                name,
+                                email,
+                                role: role || 'cashier',
+                                outlet_name: currentUserProfile?.outlet_name || 'Cafe Resto',
+                                attendance_method: 'pin'
+                            }
+                        ]);
+
+                    if (profileError) throw profileError;
+                }
+
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
+            if (url.startsWith('/staff/') && method === 'put') {
                 const staffId = url.split('/').pop();
-                const { error } = await supabase.from('staff_members').delete().eq('id', staffId);
+                const { name, email, role } = data;
+                
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        name,
+                        email,
+                        role
+                    })
+                    .eq('id', staffId);
+
                 if (error) throw error;
                 triggerRefresh();
                 if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
+            if (url.startsWith('/staff/') && method === 'delete') {
+                const staffId = url.split('/').pop();
+                const { error } = await supabase.from('profiles').delete().eq('id', staffId);
+                if (error) throw error;
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
+            // Profile Settings Update
+            if (url.startsWith('/settings/profile') && method === 'post' && !url.includes('/qris')) {
+                const { name, email, outlet_name, allowed_attendance_ip } = data;
+                
+                const demoUserStr = localStorage.getItem('demoUser');
+                if (demoUserStr) {
+                    const demoUser = JSON.parse(demoUserStr);
+                    const updatedUser = {
+                        ...demoUser,
+                        name: name || demoUser.name,
+                        email: email || demoUser.email,
+                        outlet_name: outlet_name !== undefined ? outlet_name : demoUser.outlet_name,
+                        allowed_attendance_ip: allowed_attendance_ip !== undefined ? allowed_attendance_ip : demoUser.allowed_attendance_ip
+                    };
+                    localStorage.setItem('demoUser', JSON.stringify(updatedUser));
+                    toast.success('Profil demo berhasil diperbarui!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        options.onSuccess({ props: { auth: { user: updatedUser } } });
+                    }
+                    return;
+                }
+
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                    const updatePayload: any = {
+                        name,
+                        email,
+                    };
+                    if (outlet_name !== undefined) {
+                        updatePayload.outlet_name = outlet_name;
+                    }
+                    if (allowed_attendance_ip !== undefined) {
+                        updatePayload.allowed_attendance_ip = allowed_attendance_ip;
+                    }
+
+                    const { error } = await supabase
+                        .from('profiles')
+                        .update(updatePayload)
+                        .eq('id', authUser.id);
+
+                    if (error) throw error;
+
+                    // Sync outlet name to all other profiles
+                    if (outlet_name) {
+                        const { error: syncError } = await supabase
+                            .from('profiles')
+                            .update({ outlet_name })
+                            .neq('id', authUser.id);
+                        if (syncError) {
+                            console.error('Error syncing staff outlet names:', syncError);
+                        }
+                    }
+
+                    toast.success('Profil berhasil diperbarui!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        const { data: updatedProfile } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', authUser.id)
+                            .maybeSingle();
+                        options.onSuccess({ props: { auth: { user: { ...authUser, ...updatedProfile } } } });
+                    }
+                }
+                return;
+            }
+
+            // QRIS Upload
+            if (url === '/settings/profile/qris' && method === 'post') {
+                const { qris_image } = data;
+                let qrisPath = '';
+                if (qris_image instanceof File) {
+                    qrisPath = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(qris_image);
+                    });
+                } else if (typeof qris_image === 'string') {
+                    qrisPath = qris_image;
+                }
+
+                const demoUserStr = localStorage.getItem('demoUser');
+                if (demoUserStr) {
+                    const demoUser = JSON.parse(demoUserStr);
+                    const updatedUser = {
+                        ...demoUser,
+                        qris_path: qrisPath
+                    };
+                    localStorage.setItem('demoUser', JSON.stringify(updatedUser));
+                    toast.success('QRIS demo berhasil diperbarui!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        options.onSuccess({ props: { auth: { user: updatedUser } } });
+                    }
+                    return;
+                }
+
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                    const { error } = await supabase
+                        .from('profiles')
+                        .update({ qris_path: qrisPath })
+                        .eq('id', authUser.id);
+
+                    if (error) throw error;
+
+                    toast.success('QRIS merchant berhasil diperbarui!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        const { data: updatedProfile } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', authUser.id)
+                            .maybeSingle();
+                        options.onSuccess({ props: { auth: { user: { ...authUser, ...updatedProfile } } } });
+                    }
+                }
+                return;
+            }
+
+            // QRIS Delete
+            if (url === '/settings/profile/qris' && method === 'delete') {
+                const demoUserStr = localStorage.getItem('demoUser');
+                if (demoUserStr) {
+                    const demoUser = JSON.parse(demoUserStr);
+                    const updatedUser = {
+                        ...demoUser,
+                        qris_path: null
+                    };
+                    localStorage.setItem('demoUser', JSON.stringify(updatedUser));
+                    toast.success('QRIS demo berhasil dihapus!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        options.onSuccess({ props: { auth: { user: updatedUser } } });
+                    }
+                    return;
+                }
+
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                    const { error } = await supabase
+                        .from('profiles')
+                        .update({ qris_path: null })
+                        .eq('id', authUser.id);
+
+                    if (error) throw error;
+
+                    toast.success('QRIS merchant berhasil dihapus!');
+                    triggerRefresh();
+                    if (options.onSuccess) {
+                        const { data: updatedProfile } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', authUser.id)
+                            .maybeSingle();
+                        options.onSuccess({ props: { auth: { user: { ...authUser, ...updatedProfile } } } });
+                    }
+                }
                 return;
             }
 

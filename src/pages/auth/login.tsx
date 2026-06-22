@@ -152,6 +152,40 @@ export default function Login({ status, canResetPassword }: Props) {
                                 </TextLink>
                             </span>
                         </div>
+
+                        {/* Demo Accounts Panel */}
+                        <div className="mt-2 p-4 bg-surface-container-low border border-surface-container-high rounded-2xl flex flex-col gap-3 shadow-soft select-none">
+                            <div className="flex items-center gap-2 text-primary font-bold text-[11px] uppercase tracking-wider font-sans">
+                                <span className="material-symbols-outlined text-[16px]">info</span>
+                                Akun Demo (Uji Coba)
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">
+                                <div className="p-2.5 bg-white/60 border border-neutral-100 rounded-xl flex flex-col gap-1 dark:bg-neutral-900/60 dark:border-neutral-800 shadow-xs">
+                                    <span className="font-bold text-neutral-800 dark:text-neutral-200">Owner</span>
+                                    <div className="font-mono text-neutral-500 dark:text-neutral-400 leading-normal">
+                                        Email: <span className="font-bold text-neutral-700 dark:text-neutral-300">owner@pos.id</span>
+                                        <br />
+                                        Pass: <span className="font-bold text-neutral-700 dark:text-neutral-300">owner123</span>
+                                    </div>
+                                </div>
+                                <div className="p-2.5 bg-white/60 border border-neutral-100 rounded-xl flex flex-col gap-1 dark:bg-neutral-900/60 dark:border-neutral-800 shadow-xs">
+                                    <span className="font-bold text-neutral-800 dark:text-neutral-200">Kasir</span>
+                                    <div className="font-mono text-neutral-500 dark:text-neutral-400 leading-normal">
+                                        Email: <span className="font-bold text-neutral-700 dark:text-neutral-300">kasir@pos.id</span>
+                                        <br />
+                                        Pass: <span className="font-bold text-neutral-700 dark:text-neutral-300">kasir123</span>
+                                    </div>
+                                </div>
+                                <div className="p-2.5 bg-white/60 border border-neutral-100 rounded-xl flex flex-col gap-1 dark:bg-neutral-900/60 dark:border-neutral-800 shadow-xs">
+                                    <span className="font-bold text-neutral-800 dark:text-neutral-200">Admin</span>
+                                    <div className="font-mono text-neutral-500 dark:text-neutral-400 leading-normal">
+                                        Email: <span className="font-bold text-neutral-700 dark:text-neutral-300">admin@pos.id</span>
+                                        <br />
+                                        Pass: <span className="font-bold text-neutral-700 dark:text-neutral-300">admin123</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </>
                 )}
             </Form>

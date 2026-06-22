@@ -51,9 +51,21 @@ export function SupabaseDataProvider({ children }: { children: React.ReactNode }
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
                 // Fetch profile
-                supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle().then(({ data }) => {
+                supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle().then(async ({ data }) => {
                     if (data) {
-                        setUser({ ...session.user, ...data });
+                        let finalUser = { ...session.user, ...data };
+                        if (data.role !== 'owner') {
+                            const { data: ownerProf } = await supabase
+                                .from('profiles')
+                                .select('outlet_name')
+                                .eq('role', 'owner')
+                                .limit(1)
+                                .maybeSingle();
+                            if (ownerProf && ownerProf.outlet_name) {
+                                finalUser.outlet_name = ownerProf.outlet_name;
+                            }
+                        }
+                        setUser(finalUser);
                     } else {
                         // Fallback/Mock profile
                         const fallbackUser = {
@@ -79,7 +91,19 @@ export function SupabaseDataProvider({ children }: { children: React.ReactNode }
             if (session?.user) {
                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
                 if (data) {
-                    setUser({ ...session.user, ...data });
+                    let finalUser = { ...session.user, ...data };
+                    if (data.role !== 'owner') {
+                        const { data: ownerProf } = await supabase
+                            .from('profiles')
+                            .select('outlet_name')
+                            .eq('role', 'owner')
+                            .limit(1)
+                            .maybeSingle();
+                        if (ownerProf && ownerProf.outlet_name) {
+                            finalUser.outlet_name = ownerProf.outlet_name;
+                        }
+                    }
+                    setUser(finalUser);
                 } else {
                     const fallbackUser = {
                         id: session.user.id,
