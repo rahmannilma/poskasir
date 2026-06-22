@@ -14,6 +14,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      "@inertiajs/react": path.resolve(__dirname, "src/utils/inertiaMock.tsx"),
+      "@inertiajs/core": path.resolve(__dirname, "src/utils/inertiaMock.tsx"),
     },
   },
 });

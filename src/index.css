@@ -1,149 +1,303 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Colors */
-  --color-on-surface: #121c2a;
-  --color-surface-tint: #2b6954;
-  --color-outline-variant: #bfc9c3;
-  --color-surface-container-high: #dee9fd;
-  --color-secondary-container: #fdc39a;
-  --color-tertiary-fixed-dim: #ffb4a9;
-  --color-tertiary: #4f1f19;
-  --color-outline: #707974;
-  --color-secondary-fixed-dim: #f4bb92;
-  --color-secondary-fixed: #ffdcc5;
-  --color-on-secondary-fixed: #301400;
-  --color-on-error-container: #93000a;
-  --color-inverse-primary: #95d3ba;
-  --color-on-tertiary-fixed: #380d08;
-  --color-inverse-surface: #273140;
-  --color-primary-fixed: #b0f0d6;
-  --color-background: #f9f9ff;
-  --color-tertiary-fixed: #ffdad5;
-  --color-on-secondary-container: #794e2e;
-  --color-on-primary-fixed-variant: #0b513d;
-  --color-tertiary-container: #6b342d;
-  --color-surface-variant: #d9e3f7;
-  --color-primary: #246b00;
-  --color-on-primary: #ffffff;
-  --color-on-tertiary-fixed-variant: #6e372f;
-  --color-surface-container: #e6eeff;
-  --color-on-surface-variant: #404944;
-  --color-surface-dim: #d0daef;
-  --color-surface: #f9f9ff;
-  --color-on-secondary: #ffffff;
-  --color-secondary: #805533;
-  --color-surface-container-lowest: #ffffff;
-  --color-on-secondary-fixed-variant: #653d1e;
-  --color-primary-container: #246b00;
+    --font-sans:
+        'Inter', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
 
-  --color-surface-container-low: #eff3ff;
-  --color-on-error: #ffffff;
-  --color-on-tertiary: #ffffff;
-  --color-on-background: #121c2a;
-  --color-error: #ba1a1a;
-  --color-on-primary: #ffffff;
-  --color-on-tertiary-container: #ea9e93;
-  --color-primary-fixed-dim: #95d3ba;
-  --color-on-primary-container: #80bea6;
-  --color-error-container: #ffdad6;
-  --color-surface-container-highest: #d9e3f7;
+    --font-headline:
+        'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
 
-  /* Font Family */
-  --font-sans: "Inter", sans-serif;
+    --font-mono:
+        'JetBrains Mono', monospace;
 
-  /* Font Sizes */
-  --text-title-md: 20px;
-  --text-title-md--line-height: 28px;
-  --text-title-md--font-weight: 600;
+    --radius-DEFAULT: 0.125rem;
+    --radius-lg: 0.25rem;
+    --radius-xl: 0.5rem;
+    --radius-full: 0.75rem;
 
-  --text-headline-lg: 32px;
-  --text-headline-lg--line-height: 40px;
-  --text-headline-lg--font-weight: 600;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
 
-  --text-headline-lg-mobile: 24px;
-  --text-headline-lg-mobile--line-height: 32px;
-  --text-headline-lg-mobile--font-weight: 600;
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
 
-  --text-display-lg: 48px;
-  --text-display-lg--line-height: 56px;
-  --text-display-lg--letter-spacing: -0.02em;
-  --text-display-lg--font-weight: 700;
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
 
-  --text-label-md: 14px;
-  --text-label-md--line-height: 20px;
-  --text-label-md--font-weight: 600;
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
 
-  --text-numeral-lg: 36px;
-  --text-numeral-lg--line-height: 44px;
-  --text-numeral-lg--letter-spacing: -0.01em;
-  --text-numeral-lg--font-weight: 700;
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
 
-  --text-body-md: 16px;
-  --text-body-md--line-height: 24px;
-  --text-body-md--font-weight: 400;
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
 
-  --text-body-lg: 18px;
-  --text-body-lg--line-height: 26px;
-  --text-body-lg--font-weight: 400;
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+
+    /* Custom colors from the mockup */
+    --color-surface-container-lowest: var(--surface-container-lowest);
+    --color-surface-container-low: var(--surface-container-low);
+    --color-surface-container: var(--surface-container);
+    --color-surface-container-high: var(--surface-container-high);
+    --color-surface-container-highest: var(--surface-container-highest);
+
+    --color-secondary-container: var(--secondary-container);
+    --color-primary-container: var(--primary-container);
+    --color-outline-variant: var(--outline-variant);
+
+    --color-on-surface-variant: var(--on-surface-variant);
+    --color-on-secondary-container: var(--on-secondary-container);
+    --color-on-surface: var(--on-surface);
+    --color-on-primary: var(--on-primary);
+    --color-outline: var(--outline);
 }
 
-/* Material Symbols */
+:root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #0d9488;
+    --primary-foreground: #ffffff;
+    --secondary: #475569;
+    --secondary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #f1f5f9;
+    --ring: #0d9488;
+    --radius: 0.25rem;
+    --sidebar: #f8fafc;
+    --sidebar-foreground: #475569;
+    --sidebar-border: #e2e8f0;
+
+    /* Light mode custom defaults */
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f8fafc;
+    --surface-container: #f1f5f9;
+    --surface-container-high: #e2e8f0;
+    --surface-container-highest: #cbd5e1;
+    --secondary-container: #ccfbf1;
+    --primary-container: #0d9488;
+    --outline-variant: #e2e8f0;
+    --on-surface-variant: #334155;
+    --on-secondary-container: #0f766e;
+    --on-surface: #0f172a;
+    --on-primary: #ffffff;
+    --outline: #64748b;
+}
+
+.dark {
+    /* Since Luminous Clarity style targets a light environment for productivity, 
+       we keep variables matching the light values. */
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #0d9488;
+    --primary-foreground: #ffffff;
+    --secondary: #475569;
+    --secondary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #f1f5f9;
+    --ring: #0d9488;
+    --sidebar: #f8fafc;
+    --sidebar-foreground: #475569;
+    --sidebar-border: #e2e8f0;
+
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f8fafc;
+    --surface-container: #f1f5f9;
+    --surface-container-high: #e2e8f0;
+    --surface-container-highest: #cbd5e1;
+    --secondary-container: #ccfbf1;
+    --primary-container: #0d9488;
+    --outline-variant: #e2e8f0;
+    --on-surface-variant: #334155;
+    --on-secondary-container: #0f766e;
+    --on-surface: #0f172a;
+    --on-primary: #ffffff;
+    --outline: #64748b;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', sans-serif;
+        overflow: hidden;
+        height: 100vh;
+    }
+}
+
+/* Material symbols outlined styling */
 .material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  -webkit-font-smoothing: antialiased;
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    line-height: 1;
 }
 
-/* Custom scrollbar */
-.order-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.order-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.order-scrollbar::-webkit-scrollbar-thumb {
-  background: #bfc9c3;
-  border-radius: 10px;
+.active-icon {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Product card interaction */
-.product-card {
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-.product-card:active {
-  transform: scale(0.98);
-}
-
-/* Body base styles */
-body {
-  font-family: "Inter", sans-serif;
-  background-color: #f9f9ff;
-  color: #121c2a;
-  overflow: hidden;
-  height: 100vh;
-}
-
-#root {
-  height: 100vh;
+.font-label-mono {
+    font-family: 'JetBrains Mono', monospace;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+::-webkit-scrollbar-thumb {
+    background: #0d9488;
+}
+
+.shadow-soft {
+    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
+}
+
+/* Custom Sidebar Layout & Contrast Fixes */
+aside.z-30 {
+    height: 100vh;
+}
+
+aside.z-30 > div.flex-grow {
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+aside.z-30 > div.flex-grow::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+aside.z-30 .text-secondary {
+    color: var(--on-surface-variant);
+}
+
+aside.z-30 .text-secondary\/60 {
+    color: color-mix(in srgb, var(--on-surface-variant) 60%, transparent);
+}
+
+aside.z-30 a.text-secondary:hover,
+aside.z-30 button.text-secondary:hover {
+    color: var(--on-surface);
+}
+
+aside.z-30 button.hover\:text-red-600:hover,
+aside.z-30 a.hover\:text-red-600:hover {
+    color: #ef4444; /* Tailwind red-500 */
+}
+
+/* ==========================================
+   PRINT MEDIA STYLING (THERMAL PRINTER RECEIPT)
+   ========================================== */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    
+    /* Sembunyikan semua elemen di layar */
+    body * {
+        visibility: hidden !important;
+    }
+    
+    /* Tampilkan hanya area struk */
+    #receipt-print-content,
+    #receipt-print-content * {
+        visibility: visible !important;
+    }
+    
+    /* Atur posisi dan ukuran area struk */
+    #receipt-print-content {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 80mm !important; /* Standar printer thermal 80mm, juga pas untuk 58mm jika di-scale */
+        margin: 0 !important;
+        padding: 8px !important;
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Paksa warna teks menjadi hitam agar kontras saat dicetak thermal */
+    #receipt-print-content * {
+        color: #000000 !important;
+        border-color: #000000 !important;
+    }
+
+    /* Hilangkan scrollbar dan batasan tinggi maksimal pada struk */
+    #receipt-print-content .max-h-\[160px\],
+    #receipt-print-content .max-h-\[200px\],
+    #receipt-print-content .overflow-y-auto,
+    #receipt-print-content div {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Sembunyikan tombol-tombol atau elemen no-print */
+    .no-print,
+    .no-print * {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    @page {
+        margin: 0;
+        size: auto;
+    }
 }
