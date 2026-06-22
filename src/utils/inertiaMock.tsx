@@ -150,6 +150,11 @@ export function useForm(initialValues: any = {}) {
 
 const listeners: Record<string, Set<Function>> = {};
 
+const isValidUuid = (id: string) => {
+    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return regex.test(id);
+};
+
 // 5. Mock router Object
 export const router = {
     on: (event: string, callback: Function) => {
@@ -508,6 +513,38 @@ export const router = {
             }
 
             // Dining Tables CRUD
+            if (url === '/tables' && method === 'post') {
+                const { number } = data;
+                const ownerId = currentUserProfile?.id && isValidUuid(currentUserProfile.id) ? currentUserProfile.id : null;
+                const { error } = await supabase.from('dining_tables').insert([
+                    {
+                        number: number,
+                        status: 'active',
+                        owner_id: ownerId
+                    }
+                ]);
+                if (error) throw error;
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
+            if (url.startsWith('/tables/') && method === 'put') {
+                const tableId = url.split('/').pop();
+                const { number, status } = data;
+                const { error } = await supabase
+                    .from('dining_tables')
+                    .update({
+                        number: number,
+                        status: status
+                    })
+                    .eq('id', tableId);
+                if (error) throw error;
+                triggerRefresh();
+                if (options.onSuccess) options.onSuccess({});
+                return;
+            }
+
             if (url.startsWith('/tables/') && method === 'delete') {
                 const tableId = url.split('/').pop();
                 const { error } = await supabase.from('dining_tables').delete().eq('id', tableId);
