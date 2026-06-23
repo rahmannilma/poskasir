@@ -70,6 +70,7 @@ export function usePage<T = any>(): { props: any } {
         rawCategories: data.categories,
         materials: data.materials,
         dining_tables: data.diningTables,
+        tables: data.diningTables,
         transactions: data.transactions,
         shifts: {
             data: data.shifts,
