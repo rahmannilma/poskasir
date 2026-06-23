@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mqfygvhwdsenxuujisku.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZnlndmh3ZHNlbnh1dWppc2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjU0MjEsImV4cCI6MjA5NzAwMTQyMX0.UWIIwwFc4YVERVf0lkdAWIVTVB9xpQ9vWO-pm3P2ijU';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials are not fully configured in your .env file.');
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.warn('Supabase credentials are not fully configured in your .env file, using fallback credentials.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
