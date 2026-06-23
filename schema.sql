@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS products (
   modifiers text[] DEFAULT '{}'::text[],
   sku text,
   description text,
+  stock numeric DEFAULT 50,
+  min_stock numeric DEFAULT 10,
+  is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

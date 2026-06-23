@@ -164,13 +164,18 @@ export function SupabaseDataProvider({ children }: { children: React.ReactNode }
                 }));
                 setProducts(finalProds);
             } else {
-                setProducts(finalProds.map(p => ({
-                    ...p,
-                    id: String(p.id),
-                    price: Number(p.price),
-                    stock: Number(p.stock),
-                    min_stock: Number(p.min_stock)
-                })));
+                setProducts(finalProds.map(p => {
+                    const parsedStock = Number(p.stock);
+                    const parsedMinStock = Number(p.min_stock);
+                    return {
+                        ...p,
+                        id: String(p.id),
+                        price: Number(p.price),
+                        stock: isNaN(parsedStock) || p.stock === null || p.stock === undefined ? 50 : parsedStock,
+                        min_stock: isNaN(parsedMinStock) || p.min_stock === null || p.min_stock === undefined ? 10 : parsedMinStock,
+                        is_active: p.is_active !== undefined && p.is_active !== null ? Boolean(p.is_active) : true
+                    };
+                }));
             }
 
             // Load Dining Tables
