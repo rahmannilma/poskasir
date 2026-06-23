@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { SupabaseDataProvider, useSupabaseData } from './utils/SupabaseDataContext';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
+import OrderPage from './pages/customer/order';
 
 // Import Layouts
 import AuthLayout from './layouts/auth-layout';
@@ -60,6 +61,29 @@ function SettingsPageWrapper({ Component }: { Component: any }) {
     );
 }
 
+function OrderPageWrapper() {
+    const { table } = useParams<{ table: string }>();
+    const { products, categories, profiles } = useSupabaseData();
+    
+    // Find owner profile for outlet_name and qris_path
+    const ownerProfile = profiles.find(p => p.role === 'owner');
+    const outletName = ownerProfile?.outlet_name || 'CAFE RESTO';
+    const qrisPath = ownerProfile?.qris_path || null;
+    
+    // Categories on OrderPage should be an array of category names
+    const categoryNames = categories.map(c => c.name);
+
+    return (
+        <OrderPage
+            products={products}
+            categories={categoryNames}
+            table_number={table || ''}
+            qris_path={qrisPath}
+            outlet_name={outletName}
+        />
+    );
+}
+
 function AppContent() {
     const { isLoading, user, refreshData } = useSupabaseData();
 
@@ -82,6 +106,9 @@ function AppContent() {
             <Routes>
                 {/* Landing/Welcome Page */}
                 <Route path="/" element={<Welcome />} />
+
+                {/* Customer Self-Ordering Route (No login required) */}
+                <Route path="/order/:table" element={<OrderPageWrapper />} />
 
                 {/* Public Auth Routes */}
                 <Route path="/login" element={<AuthPageWrapper Component={Login} authenticatedRedirect={(u) => u.role === 'owner' ? '/dashboard' : '/pos'} />} />

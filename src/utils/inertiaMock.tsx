@@ -392,6 +392,80 @@ export const router = {
                 return;
             }
 
+            // Customer self-ordering submit
+            if (url.startsWith('/order/') && method === 'post') {
+                const tableNumber = url.split('/').pop();
+                const { customer_name, payment_method, items } = data;
+                
+                const orderNumber = String(Math.floor(5800 + Math.random() * 200));
+                const invoiceNumber = `INV-${orderNumber}`;
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                // Fetch full products from DB to get names and calculate pricing
+                const { data: dbProducts } = await supabase.from('products').select('*');
+                const productsMap = new Map(dbProducts?.map(p => [String(p.id), p]) || []);
+
+                const mappedItems = (items || []).map((item: any) => {
+                    const product = productsMap.get(String(item.product_id));
+                    const price = product ? Number(product.price) : 0;
+                    const name = product ? product.name : 'Produk';
+                    return {
+                        product_id: item.product_id,
+                        quantity: item.quantity,
+                        name: name,
+                        price: price,
+                        total: price * item.quantity
+                    };
+                });
+
+                const totalAmount = mappedItems.reduce((sum: number, item: any) => sum + item.total, 0);
+
+                if (payment_method === 'qris') {
+                    // QRIS payment: goes straight to paid transactions (completed status)
+                    const txPayload = {
+                        id: invoiceNumber,
+                        customer: customer_name || 'Pelanggan Mandiri',
+                        time: `Hari ini, ${timeStr}`,
+                        total: totalAmount,
+                        method: 'QRIS',
+                        status: 'Lunas',
+                        items: mappedItems
+                    };
+
+                    const { error: txErr } = await supabase.from('transactions').insert([txPayload]);
+                    if (txErr) throw txErr;
+
+                    // Subtract stocks
+                    for (const item of mappedItems) {
+                        const product = productsMap.get(String(item.product_id));
+                        if (product) {
+                            const newStock = Math.max(0, product.stock - item.quantity);
+                            await supabase.from('products').update({ stock: newStock }).eq('id', String(item.product_id));
+                        }
+                    }
+                } else {
+                    // Cash payment: goes to pending orders (waiting for cashier approval)
+                    const pendingPayload = {
+                        id: `pending-${Date.now()}`,
+                        order_number: orderNumber,
+                        customer_name: customer_name || 'Pelanggan Mandiri',
+                        table_number: tableNumber || '',
+                        discount_percent: 0,
+                        items: mappedItems
+                    };
+
+                    const { error: poErr } = await supabase.from('pending_orders').insert([pendingPayload]);
+                    if (poErr) throw poErr;
+                }
+
+                triggerRefresh();
+                if (options.onSuccess) {
+                    options.onSuccess({});
+                }
+                return;
+            }
+
             // Void pending order
             if (url.startsWith('/checkout/void/') && method === 'post') {
                 const orderId = url.split('/').pop();
